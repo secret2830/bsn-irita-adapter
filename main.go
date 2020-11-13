@@ -1,12 +1,18 @@
 package main
 
 import (
-	"fmt"
 	"os"
+
+	"github.com/smartcontractkit/chainlink/core/logger"
+	"go.uber.org/zap/zapcore"
 )
 
+func init() {
+	logger.SetLogger(logger.CreateProductionLogger("", false, zapcore.DebugLevel, false))
+}
+
 func main() {
-	fmt.Println("Starting BSN-IRITA adapter")
+	logger.Info("Starting BSN-IRITA adapter")
 
 	chainID := os.Getenv("BI_CHAIN_ID")
 	endpointRPC := os.Getenv("BI_ENDPOINT_RPC")
@@ -30,9 +36,9 @@ func main() {
 
 	adapter, err := NewBSNIritaAdapter(endpoint, keyParams)
 	if err != nil {
-		fmt.Println("Failed to create the BSN-IRITA adapter:", err)
+		logger.Errorf("Failed to create the BSN-IRITA adapter: %s", err)
 		return
 	}
 
-	RunWebserver(adapter.handle)
+	RunWebServer(adapter.handle)
 }

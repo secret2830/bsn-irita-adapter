@@ -9,21 +9,24 @@ import (
 	"github.com/irisnet/service-sdk-go/service"
 	"github.com/irisnet/service-sdk-go/types"
 	"github.com/irisnet/service-sdk-go/types/store"
+
+	"github.com/smartcontractkit/chainlink/core/logger"
+	"github.com/smartcontractkit/chainlink/core/store/models"
 )
 
 type Request struct {
-	RequestID string      `json:"request_id"`
-	Result    interface{} `json:"result"`
+	RequestID string `json:"request_id"`
+	Result    string `json:"result"`
 }
 
-type ServiceRequestResult struct {
+type ServiceResponseResult struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
 
-type ServiceRequestOutput struct {
-	Header string `json:"header"`
-	Body   string `json:"body"`
+type ServiceResponseOutput struct {
+	Header models.JSON `json:"header"`
+	Body   models.JSON `json:"body"`
 }
 
 type KeyParams struct {
@@ -45,12 +48,19 @@ type BSNIritaAdapter struct {
 }
 
 func NewBSNIritaAdapter(endpoint Endpoint, keyParams KeyParams) (*BSNIritaAdapter, error) {
-	cfg := types.ClientConfig{
-		ChainID:  endpoint.ChainID,
-		NodeURI:  endpoint.RPC,
-		GRPCAddr: endpoint.GRPC,
-		KeyDAO:   store.NewFileDAO(keyParams.Path),
-		Mode:     types.Commit,
+	options := []types.Option{
+		types.KeyDAOOption(store.NewFileDAO(keyParams.Path)),
+		types.ModeOption(types.Commit),
+	}
+
+	cfg, err := types.NewClientConfig(
+		endpoint.RPC,
+		endpoint.GRPC,
+		endpoint.ChainID,
+		options...,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	client := servicesdk.NewServiceClient(cfg)
@@ -69,12 +79,14 @@ func NewBSNIritaAdapter(endpoint Endpoint, keyParams KeyParams) (*BSNIritaAdapte
 }
 
 func (adapter BSNIritaAdapter) handle(req Request) (interface{}, error) {
+	logger.Infof("Request received: %+v", req)
+
 	requestIDBz, err := hex.DecodeString(req.RequestID)
 	if err != nil {
 		return nil, err
 	}
 
-	result, output := adapter.buildServiceResponse(req)
+	result, output := adapter.buildServiceResponse(req.Result)
 
 	msg := service.MsgRespondService{
 		RequestId: requestIDBz,
@@ -90,32 +102,59 @@ func (adapter BSNIritaAdapter) handle(req Request) (interface{}, error) {
 
 	res, err := adapter.Client.BuildAndSend([]types.Msg{&msg}, baseTx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send transaction: %s", err.Error())
+		return nil, fmt.Errorf("Failed to send transaction: %s", err.Error())
 	}
+
+	logger.Infof("Transaction sent successfully: %s", res.Hash)
 
 	return res, nil
 }
 
-func (adapter BSNIritaAdapter) buildServiceResponse(req Request) (result, output string) {
-	res := ServiceRequestResult{
-		Code: 200,
+func (adapter BSNIritaAdapter) buildServiceResponse(payload string) (result, output string) {
+	code := 200
+	message := ""
+
+	_, err := models.ParseJSON([]byte(payload))
+	if err != nil {
+		code = 500
+		message = "failed to process request"
 	}
 
-	if req.Result == nil {
-		res.Code = 500
+	if code == 200 {
+		output, _ = buildServiceResponseOutput("{}", payload)
 	}
 
-	resBz, _ := json.Marshal(res)
+	result, _ = buildServiceResponseResult(code, message)
 
-	if res.Code == 200 {
-		out := ServiceRequestOutput{
-			Header: "{}",
-			Body:   req.Result.(string),
-		}
+	return result, output
+}
 
-		outputBz, _ := json.Marshal(out)
-		output = string(outputBz)
+func buildServiceResponseResult(code int, message string) (string, error) {
+	result := ServiceResponseResult{
+		Code:    code,
+		Message: message,
 	}
 
-	return string(resBz), output
+	bz, err := json.Marshal(result)
+	return string(bz), err
+}
+
+func buildServiceResponseOutput(header, body string) (string, error) {
+	headerJS, err := models.ParseJSON([]byte(header))
+	if err != nil {
+		return "", err
+	}
+
+	bodyJS, err := models.ParseJSON([]byte(body))
+	if err != nil {
+		return "", err
+	}
+
+	output := ServiceResponseOutput{
+		Header: headerJS,
+		Body:   bodyJS,
+	}
+
+	bz, err := json.Marshal(output)
+	return string(bz), err
 }

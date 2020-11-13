@@ -11,11 +11,11 @@ import (
 
 type handler func(req Request) (interface{}, error)
 
-func RunWebserver(
+func RunWebServer(
 	handler handler,
 ) {
 	srv := NewHTTPService(handler)
-	err := srv.Router.Run(":8081")
+	err := srv.Router.Run()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -105,7 +105,7 @@ func (srv *HttpService) Call(c *gin.Context) {
 	res, err := srv.Handler(req.Data)
 	if err != nil {
 		log.Println(err)
-		errorJob(c, http.StatusInternalServerError, req.JobID, "")
+		errorJob(c, http.StatusInternalServerError, req.JobID, err.Error())
 		return
 	}
 
