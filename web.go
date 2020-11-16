@@ -46,6 +46,7 @@ func (srv *HttpService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (srv *HttpService) createRouter() {
 	r := gin.Default()
 	r.POST("/", srv.Call)
+	r.GET("/health", srv.ShowHealth)
 
 	srv.Router = r
 }
@@ -115,4 +116,8 @@ func (srv *HttpService) Call(c *gin.Context) {
 		Status:     "success",
 		Data:       res,
 	})
+}
+
+func (srv *HttpService) ShowHealth(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"result": true})
 }
