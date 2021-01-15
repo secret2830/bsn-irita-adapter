@@ -14,13 +14,11 @@ func init() {
 func main() {
 	logger.Info("Starting BSN-IRITA adapter")
 
-	chainID := os.Getenv("BI_CHAIN_ID")
-	endpointRPC := os.Getenv("BI_ENDPOINT_RPC")
-	endpointGRPC := os.Getenv("BI_ENDPOINT_GRPC")
-
-	keyPath := os.Getenv("BI_KEY_PATH")
-	keyName := os.Getenv("BI_KEY_NAME")
-	keyPassword := os.Getenv("BI_KEY_PASSWORD")
+	chainID := os.Getenv("BA_CHAIN_ID")
+	endpointRPC := os.Getenv("BA_ENDPOINT_RPC")
+	endpointGRPC := os.Getenv("BA_ENDPOINT_GRPC")
+	mnemonic := os.Getenv("BA_KEY_MNEMONIC")
+	listenAddr := os.Getenv("BA_LISTEN_ADDR")
 
 	endpoint := Endpoint{
 		ChainID: chainID,
@@ -29,9 +27,9 @@ func main() {
 	}
 
 	keyParams := KeyParams{
-		Path:     keyPath,
-		Name:     keyName,
-		Password: keyPassword,
+		Mnemonic: mnemonic,
+		Name:     DefaultKeyName,
+		Password: DefaultKeyPass,
 	}
 
 	adapter, err := NewBSNIritaAdapter(endpoint, keyParams)
@@ -40,5 +38,5 @@ func main() {
 		return
 	}
 
-	RunWebServer(adapter.handle)
+	RunWebServer(listenAddr, adapter.handle)
 }

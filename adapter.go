@@ -30,7 +30,7 @@ type ServiceResponseOutput struct {
 }
 
 type KeyParams struct {
-	Path     string
+	Mnemonic string
 	Name     string
 	Password string
 	Address  types.AccAddress
@@ -49,7 +49,7 @@ type BSNIritaAdapter struct {
 
 func NewBSNIritaAdapter(endpoint Endpoint, keyParams KeyParams) (*BSNIritaAdapter, error) {
 	options := []types.Option{
-		types.KeyDAOOption(store.NewFileDAO(keyParams.Path)),
+		types.KeyDAOOption(store.NewMemory(nil)),
 		types.ModeOption(types.Commit),
 	}
 
@@ -65,12 +65,12 @@ func NewBSNIritaAdapter(endpoint Endpoint, keyParams KeyParams) (*BSNIritaAdapte
 
 	client := servicesdk.NewServiceClient(cfg)
 
-	_, address, err := client.Find(keyParams.Name, keyParams.Password)
+	address, err := client.Recover(keyParams.Name, keyParams.Password, keyParams.Mnemonic)
 	if err != nil {
 		return nil, err
 	}
 
-	keyParams.Address = address
+	keyParams.Address, _ = types.AccAddressFromBech32(address)
 
 	return &BSNIritaAdapter{
 		Client:    client,

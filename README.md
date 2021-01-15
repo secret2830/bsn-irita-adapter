@@ -14,12 +14,11 @@ make install
 
 | Key | Description |
 |-----|-------------|
-| `BI_KEY_PATH` | BSN-IRITA key storage path |
-| `BI_KEY_NAME` | Key name |
-| `BI_KEY_PASSWORD` | Key decryption password |
-| `BI_CHAIN_ID` | Endpoint chain id |
-| `BI_ENDPOINT_RPC` | Endpoint RPC address for the BSN-IRITA node to connect to |
-| `BI_ENDPOINT_GRPC` | Endpoint gRPC address for the BSN-IRITA node to connect to |
+| `BA_KEY_MNEMONIC` | BSN-IRITA key mnemonic |
+| `BA_CHAIN_ID` | BSN-IRITA endpoint chain id |
+| `BA_ENDPOINT_RPC` | Endpoint RPC address for the BSN-IRITA node to connect to |
+| `BA_ENDPOINT_GRPC` | Endpoint gRPC address for the BSN-IRITA node to connect to |
+| `BA_LISTEN_ADDR` | BSN-IRITA adapter listen address, default to `0.0.0.0:8080` |
 
 ### Start
 

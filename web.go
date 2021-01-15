@@ -12,10 +12,16 @@ import (
 type handler func(req Request) (interface{}, error)
 
 func RunWebServer(
+	listenAddr string,
 	handler handler,
 ) {
+	if len(listenAddr) == 0 {
+		listenAddr = "0.0.0.0:8080"
+	}
+
 	srv := NewHTTPService(handler)
-	err := srv.Router.Run()
+
+	err := srv.Router.Run(listenAddr)
 	if err != nil {
 		fmt.Println(err)
 	}
